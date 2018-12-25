@@ -126,8 +126,10 @@ type SearchResult struct {
 }
 
 type APISearchResult struct {
-	InvocationInfo interface{}  `json:"invocationInfo"`
-	Result         SearchResult `json:"result"`
+	InvocationInfo   interface{}  `json:"invocationInfo"`
+	Result           SearchResult `json:"result"`
+	Error            interface{}  `json:"error"`
+	ErrorDescription interface{}  `json:"error_description"`
 }
 
 func NewAPI(config Config) (*API, error) {
