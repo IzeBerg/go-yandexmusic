@@ -200,6 +200,7 @@ func (s *API) request(req *http.Request, result interface{}) error {
 	if resp, err := s.getHTTPClient().Do(req); err != nil {
 		return err
 	} else {
+		defer resp.Body.Close()
 		if fullResp, err := ioutil.ReadAll(resp.Body); err != nil {
 			return err
 		} else {
@@ -261,7 +262,8 @@ type downloadInfo struct {
 }
 
 func (s *Track) GetURL() (string, error) {
-	if resp, err := http.Get(`http://storage.music.yandex.ru/download-info/` + s.StorageDir + `/2.mp3`); err == nil {
+	if resp, err := http.Get(`http://storage.mds.yandex.net/download-info/` + s.StorageDir + `/2`); err == nil {
+		defer resp.Body.Close()
 		if fullResp, err := ioutil.ReadAll(resp.Body); err == nil {
 			dl := &downloadInfo{}
 			if err := xml.Unmarshal(fullResp, dl); err == nil {
@@ -287,16 +289,20 @@ func GetKey(res string) string {
 }
 
 func NewAPIWithProxy(proxy string) (*API, error) {
-	proxyURL, err := url.Parse(proxy)
-	if err != nil {
-		return nil, err
+	var proxyURL *url.URL
+	if proxy != `` {
+		if _url, err := url.Parse(proxy); err != nil {
+			return nil, err
+		} else {
+			proxyURL = _url
+		}
 	}
-	api := &API{
-		HTTPClient: &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			},
-		},
+	client := &http.Client{}
+	if proxyURL != nil {
+		client.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
 	}
+	api := &API{HTTPClient: client}
 	return api, nil
 }
