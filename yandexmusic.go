@@ -5,8 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,6 +15,23 @@ import (
 )
 
 const APIRequestURL = `https://music.yandex.ru`
+
+func GetID(id interface{}) int64  {
+	switch id.(type) {
+	case string:
+		if id, err := strconv.ParseInt(id.(string), 10, 32); err == nil {
+			return id
+		} else {
+			panic(err)
+		}
+	case float64:
+		return int64(id.(float64))
+	case int64:
+		return int64(id.(float64))
+	default:
+		panic(fmt.Errorf(`unknown type of id: %s`, id))
+	}
+}
 
 type API struct {
 	HTTPClient *http.Client
@@ -38,17 +55,7 @@ type Album struct {
 }
 
 func (s Album) GetID() int64 {
-	switch s.Id.(type) {
-	case string:
-		id, err := strconv.ParseInt(s.Id.(string), 10, 32)
-		if err == nil {
-			return id
-		}
-		panic(id)
-	default:
-		return s.Id.(int64)
-	}
-
+	return GetID(s.Id)
 }
 
 type Artist struct {
@@ -61,17 +68,7 @@ type Artist struct {
 }
 
 func (s Artist) GetID() int64 {
-	switch s.Id.(type) {
-	case string:
-		id, err := strconv.ParseInt(s.Id.(string), 10, 32)
-		if err == nil {
-			return id
-		}
-		panic(id)
-	default:
-		return s.Id.(int64)
-	}
-
+	return GetID(s.Id)
 }
 
 type Lyrics struct {
@@ -84,17 +81,7 @@ type Lyrics struct {
 }
 
 func (s Lyrics) GetID() int64 {
-	switch s.Id.(type) {
-	case string:
-		id, err := strconv.ParseInt(s.Id.(string), 10, 32)
-		if err == nil {
-			return id
-		}
-		panic(id)
-	default:
-		return s.Id.(int64)
-	}
-
+	return GetID(s.Id)
 }
 
 type Track struct {
@@ -112,17 +99,7 @@ type Track struct {
 }
 
 func (s Track) GetID() int64 {
-	switch s.Id.(type) {
-	case string:
-		id, err := strconv.ParseInt(s.Id.(string), 10, 32)
-		if err == nil {
-			return id
-		}
-		panic(id)
-	default:
-		return s.Id.(int64)
-	}
-
+	return GetID(s.Id)
 }
 
 type TracksSearch struct {
