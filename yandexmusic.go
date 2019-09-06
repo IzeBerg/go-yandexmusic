@@ -16,7 +16,7 @@ import (
 
 const APIRequestURL = `https://music.yandex.ru`
 
-func GetID(id interface{}) int64  {
+func GetID(id interface{}) int64 {
 	switch id.(type) {
 	case string:
 		if id, err := strconv.ParseInt(id.(string), 10, 32); err == nil {
@@ -132,11 +132,12 @@ type SearchResult struct {
 }
 
 type TrackResult struct {
-	Counter int      `json:"counter"`
-	Artists []Artist `json:"artists"`
-	Aliases []string `json:"aliases"`
-	Track   Track    `json:"track"`
-	Lyric   []Lyrics `json:"lyric"`
+	Counter       int      `json:"counter"`
+	Artists       []Artist `json:"artists"`
+	Aliases       []string `json:"aliases"`
+	Track         Track    `json:"track"`
+	SimilarTracks []Track  `json:"similarTracks"`
+	Lyric         []Lyrics `json:"lyric"`
 
 	Message string `json:"message"`
 }
