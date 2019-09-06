@@ -21,6 +21,24 @@ func TestAPI_GetTrack(t *testing.T) {
 	t.Log(res.Track.Artists[0].Name, `-`, res.Track.Title, trackURL)
 }
 
+func TestAPI_GetAlbum(t *testing.T) {
+	api, err := NewAPIWithProxy(os.Getenv(`proxy`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res, err := api.GetAlbum(1, 0); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(res)
+	}
+	if res, err := api.GetAlbum(0, 1); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(res)
+	}
+
+}
+
 func TestAPI_Search(t *testing.T) {
 	api, err := NewAPIWithProxy(os.Getenv(`proxy`))
 	if err != nil {

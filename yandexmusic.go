@@ -16,6 +16,8 @@ import (
 
 const APIRequestURL = `https://music.yandex.ru`
 
+var ErrNotFound  = errors.New(`not found`)
+
 func GetID(id interface{}) int64 {
 	switch id.(type) {
 	case string:
@@ -37,7 +39,17 @@ type API struct {
 	HTTPClient *http.Client
 }
 
+type ErrorContainer struct {
+	Message string `json:"message"`
+}
+
+func (s ErrorContainer) Error() string {
+	return s.Message
+}
+
 type Album struct {
+	ErrorContainer
+
 	Id                       interface{} `json:"id"`
 	StorageDir               string      `json:"storageDir"`
 	OriginalReleaseYear      int         `json:"originalReleaseYear"`
@@ -50,7 +62,7 @@ type Album struct {
 	TrackCount               int         `json:"trackCount"`
 	Genre                    string      `json:"genre"`
 	TrackPosition            interface{} `json:"trackPosition"`
-	Volumes                  []Track     `json:"volumes"`
+	Volumes                  [][]Track     `json:"volumes"`
 	Lyric                    []Lyrics    `json:"lyric"`
 }
 
@@ -59,6 +71,8 @@ func (s Album) GetID() int64 {
 }
 
 type Artist struct {
+	ErrorContainer
+
 	Id         interface{} `json:"id"`
 	Cover      interface{} `json:"cover"`
 	Composer   bool        `json:"composer"`
@@ -72,6 +86,8 @@ func (s Artist) GetID() int64 {
 }
 
 type Lyrics struct {
+	ErrorContainer
+
 	Id              interface{} `json:"id"`
 	Lyrics          string      `json:"lyrics"`
 	FullLyrics      string      `json:"fullLyrics"`
@@ -85,6 +101,8 @@ func (s Lyrics) GetID() int64 {
 }
 
 type Track struct {
+	ErrorContainer
+
 	Id                       interface{}   `json:"id"`
 	Albums                   []Album       `json:"albums"`
 	StorageDir               string        `json:"storageDir"`
@@ -103,24 +121,32 @@ func (s Track) GetID() int64 {
 }
 
 type TracksSearch struct {
+	ErrorContainer
+
 	Total   int     `json:"total"`
 	PerPage int     `json:"perPage"`
 	Results []Track `json:"items"`
 }
 
 type ArtistsSearch struct {
+	ErrorContainer
+
 	Total   int      `json:"total"`
 	PerPage int      `json:"perPage"`
 	Results []Artist `json:"items"`
 }
 
 type AlbumsSearch struct {
+	ErrorContainer
+
 	Total   int     `json:"total"`
 	PerPage int     `json:"perPage"`
 	Results []Album `json:"items"`
 }
 
 type SearchResult struct {
+	ErrorContainer
+
 	Playlists interface{}   `json:"playlists"`
 	Albums    AlbumsSearch  `json:"albums"`
 	Best      interface{}   `json:"best"`
@@ -132,19 +158,14 @@ type SearchResult struct {
 }
 
 type TrackResult struct {
+	ErrorContainer
+
 	Counter       int      `json:"counter"`
 	Artists       []Artist `json:"artists"`
 	Aliases       []string `json:"aliases"`
 	Track         Track    `json:"track"`
 	SimilarTracks []Track  `json:"similarTracks"`
 	Lyric         []Lyrics `json:"lyric"`
-
-	Message string `json:"message"`
-}
-
-type AlbumResult struct {
-	Album
-	Message string `json:"message"`
 }
 
 func (s *API) requestPOST(reqURL string, query url.Values, result interface{}) error {
@@ -179,14 +200,12 @@ func (s *API) request(req *http.Request, result interface{}) error {
 		return err
 	} else {
 		defer resp.Body.Close()
-		if fullResp, err := ioutil.ReadAll(resp.Body); err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return ErrNotFound
+		} else if fullResp, err := ioutil.ReadAll(resp.Body); err != nil {
 			return err
 		} else {
-			if err := json.Unmarshal(fullResp, result); err != nil {
-				return err
-			} else {
-				return nil
-			}
+			return json.Unmarshal(fullResp, result)
 		}
 	}
 }
@@ -206,6 +225,34 @@ func (s *API) Search(text, itemType, lang string) (*SearchResult, error) {
 	reqURL.RawQuery = query.Encode()
 
 	if err := s.requestGET(reqURL.String(), res); err == nil {
+		if res.Message != `` {
+			return nil, res
+		}
+		return res, nil
+	} else {
+		return nil, err
+	}
+}
+
+func (s *API) GetAlbum(albumID, byTrack int64) (*Album, error) {
+	res := &Album{}
+
+	query := url.Values{}
+	if albumID != 0 {
+		query.Set(`album`, fmt.Sprintf(`%d`, albumID))
+	}
+	if byTrack != 0 {
+		query.Set(`byTrack`, fmt.Sprintf(`%d`, byTrack))
+	}
+
+	reqURL, _ := url.Parse(APIRequestURL)
+	reqURL.Path = `/handlers/album.jsx`
+	reqURL.RawQuery = query.Encode()
+
+	if err := s.requestGET(reqURL.String(), res); err == nil {
+		if res.Message != `` {
+			return nil, res
+		}
 		return res, nil
 	} else {
 		return nil, err
@@ -224,7 +271,7 @@ func (s *API) GetTrack(albumID, trackID int64) (*TrackResult, error) {
 
 	if err := s.requestGET(reqURL.String(), res); err == nil {
 		if res.Message != `` {
-			return res, errors.New(res.Message)
+			return nil, res
 		}
 		return res, nil
 	} else {
