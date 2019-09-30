@@ -318,11 +318,14 @@ func (s *API) GetTrack(albumID, trackID int64) (*TrackResult, error) {
 	}
 }
 
-func (s *API) GetArtist(artistID int64) (*ArtistResult, error) {
+func (s *API) GetArtist(artistID int64, what string) (*ArtistResult, error) {
 	res := &ArtistResult{}
 
 	query := url.Values{}
 	query.Set(`artist`, strconv.FormatInt(artistID, 10))
+	if what != `` {
+		query.Set(`what`, what)
+	}
 
 	reqURL, _ := url.Parse(APIRequestURL)
 	reqURL.Path = `/handlers/artist.jsx`
