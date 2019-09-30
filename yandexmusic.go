@@ -291,6 +291,14 @@ func (s *API) GetAlbum(albumID, byTrack int64) (*Album, error) {
 }
 
 func (s *API) GetTrack(albumID, trackID int64) (*TrackResult, error) {
+	if albumID == 0 {
+		if album, err := s.GetAlbum(0, trackID); err == nil {
+			albumID = album.GetID()
+		} else {
+			return nil, err
+		}
+	}
+
 	res := &TrackResult{}
 
 	query := url.Values{}
