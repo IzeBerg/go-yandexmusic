@@ -61,7 +61,12 @@ func TestAPI_GetArtist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := api.GetArtist(711232)
+	res, err := api.GetArtist(711232, ``)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(res)
+	res, err = api.GetArtist(711232, `tracks`)
 	if err != nil {
 		t.Fatal(err)
 	}

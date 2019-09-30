@@ -227,6 +227,10 @@ func (s *API) getHTTPClient() *http.Client {
 }
 
 func (s *API) request(req *http.Request, result interface{}) error {
+	q := req.URL.Query()
+	q.Set(`external-domain`, `music.yandex.ru`)
+	req.URL.RawQuery = q.Encode()
+
 	if resp, err := s.getHTTPClient().Do(req); err != nil {
 		return err
 	} else {
