@@ -55,3 +55,15 @@ func TestAPI_Search(t *testing.T) {
 	}
 	t.Log(track.Artists[0].Name, `-`, track.Title, trackURL)
 }
+
+func TestAPI_GetArtist(t *testing.T) {
+	api, err := NewAPIWithProxy(os.Getenv(`proxy`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := api.GetArtist(711232)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(res)
+}

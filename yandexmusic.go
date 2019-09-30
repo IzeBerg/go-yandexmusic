@@ -16,7 +16,7 @@ import (
 
 const APIRequestURL = `https://music.yandex.ru`
 
-var ErrNotFound  = errors.New(`not found`)
+var ErrNotFound = errors.New(`not found`)
 
 func GetID(id interface{}) int64 {
 	switch id.(type) {
@@ -62,7 +62,7 @@ type Album struct {
 	TrackCount               int         `json:"trackCount"`
 	Genre                    string      `json:"genre"`
 	TrackPosition            interface{} `json:"trackPosition"`
-	Volumes                  [][]Track     `json:"volumes"`
+	Volumes                  [][]Track   `json:"volumes"`
 	Lyric                    []Lyrics    `json:"lyric"`
 }
 
@@ -168,6 +168,37 @@ type TrackResult struct {
 	Lyric         []Lyrics `json:"lyric"`
 }
 
+type ArtistResult struct {
+	ErrorContainer
+	Artist        Artist        `json:"artist"`
+	Similar       []Artist      `json:"similar"`
+	AllSimilar    []Artist      `json:"allSimilar"`
+	Albums        []Album       `json:"albums"`
+	AlsoAlbums    []Album       `json:"alsoAlbums"`
+	Tracks        []Track       `json:"tracks"`
+	TrackIds      []string      `json:"trackIds"`
+	Playlists     []interface{} `json:"playlists"`
+	PlaylistIDs   []interface{} `json:"playlistIds"`
+	HasPromotions bool          `json:"hasPromotions"`
+	LikesCount    int           `json:"likesCount"`
+	Redirected    bool          `json:"redirected"`
+	Radio         struct {
+		Available bool `json:"available"`
+	} `json:"radio"`
+}
+
+func (s *ArtistResult) GetTrackIds() []int64 {
+	var ids []int64
+	for _, src := range s.TrackIds {
+		if id, err := strconv.ParseInt(src, 10, 64); err == nil {
+			ids = append(ids, id)
+		} else {
+			panic(err)
+		}
+	}
+	return ids
+}
+
 func (s *API) requestPOST(reqURL string, query url.Values, result interface{}) error {
 	req, err := http.NewRequest("POST", reqURL, bytes.NewReader([]byte(query.Encode())))
 	if err != nil {
@@ -267,6 +298,26 @@ func (s *API) GetTrack(albumID, trackID int64) (*TrackResult, error) {
 
 	reqURL, _ := url.Parse(APIRequestURL)
 	reqURL.Path = `/handlers/track.jsx`
+	reqURL.RawQuery = query.Encode()
+
+	if err := s.requestGET(reqURL.String(), res); err == nil {
+		if res.Message != `` {
+			return nil, res
+		}
+		return res, nil
+	} else {
+		return nil, err
+	}
+}
+
+func (s *API) GetArtist(artistID int64) (*ArtistResult, error) {
+	res := &ArtistResult{}
+
+	query := url.Values{}
+	query.Set(`artist`, strconv.FormatInt(artistID, 10))
+
+	reqURL, _ := url.Parse(APIRequestURL)
+	reqURL.Path = `/handlers/artist.jsx`
 	reqURL.RawQuery = query.Encode()
 
 	if err := s.requestGET(reqURL.String(), res); err == nil {
